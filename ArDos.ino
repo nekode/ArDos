@@ -841,7 +841,7 @@ uint16_t shet_gr = 0;
          mass_p[i] = mass_p[i + 1];
        }
         mass_p[82] = byte(shet_gr);
-		if (GRAPH_count > 82) {GRAPH_max = 0; GRAPH_count = 0;}
+		if (GRAPH_count > 82) {GRAPH_max = 3; GRAPH_count = 0;}
 //Serial.print("GRAPH_max_prev = ");
 //Serial.println(GRAPH_max);		
 	    for (int i = 0; i < 82; i++) 
