@@ -54,7 +54,7 @@ byte sek = 0, minute = 0, bet_z = 0, gotovo = 0;
 int  bet_z0 = 0, bet_z1 = 0, bet_r = 0;
 float VCC = 0.0, doz_v = 0.0, stat_percent = 99.0;
 bool tr = 0, poisk = 1, fonarik = 0, g_fl = 0, toch;
-uint8_t GRAPH_max = 3; // максимальное значение за период отображения графика
+uint8_t GRAPH_max = 5; // максимальное значение за период отображения графика
 uint8_t GRAPH_count = 0; // счётчик для поиска максимального значения для графика
 #define key_pressed_left 1
 #define key_pressed_right 2
@@ -841,7 +841,7 @@ uint16_t shet_gr = 0;
          mass_p[i] = mass_p[i + 1];
        }
         mass_p[82] = byte(shet_gr);
-		if (GRAPH_count > 82) {GRAPH_max = 3; GRAPH_count = 0;}
+		if (GRAPH_count > 82) {GRAPH_max = 5; GRAPH_count = 0;}
 //Serial.print("GRAPH_max_prev = ");
 //Serial.println(GRAPH_max);		
 	    for (int i = 0; i < 82; i++) 
@@ -868,11 +868,17 @@ uint16_t shet_gr = 0;
       count_and_dose_seconds = timer_seconds;
       for (int i = 0; i < 40; i++) { //сдвигаем
         mass_36[i] = mass_36[i + 1];
+//uint8_t k = mass_36[i];		
+//Serial.print(k);
+//Serial.print(" ");
+//if (i == 39) {Serial.println (" ");}
       }
       mass_36[40] = shet;
       if (zam_36p < 40) { //первый набор массива
         zam_36p++;
         fon = fon + shet;
+//Serial.print("FON = ");
+//Serial.println(fon);          
       }
       if (zam_36p >= 40) { //набор массива
         int fon_vr1 = 0;
@@ -880,6 +886,8 @@ uint16_t shet_gr = 0;
           fon_vr1 = fon_vr1 + mass_36[i];
         }
         fon = fon_vr1;
+//Serial.print("FON = ");
+//Serial.println(fon);			
       }
       shet = 0;
       doz_v = doz_v + fon / 100.0 / 40.0;
