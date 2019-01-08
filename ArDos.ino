@@ -875,9 +875,9 @@ if (poisk == 1)
 							{
 								fon_vr254 = fon_vr254 + mass_poisk[254-i];
 							}
-						for (int i = 254 - geiger_counter_seconds; i < 255; i++) 
+						for (int j = 254 - geiger_counter_seconds; j < 255; j++) 
 							{	
-								fon_vr_poisk = fon_vr_poisk + mass_poisk[i];
+								fon_vr_poisk = fon_vr_poisk + mass_poisk[j];
 							}
 						fon = fon_vr_poisk;
 //						fon_254 = (float(fon_vr254))*((float(geiger_counter_seconds))/(float(zam_poisk_counter)));
