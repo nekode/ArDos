@@ -22,6 +22,7 @@ byte del_BUZZ = 7;//длительность одиночного сигнала
 byte puls = 2; //тонкая настройка длинны импульса высоковольтного транса
 byte scrin_GRAF = 1; //скорость построения графика в секундах
 bool podsvetka = 0; //подсветка
+uint8_t graph_type = 1; //тип графика
 bool alarm_sound = 0; //флаг индикации превышения порога звуком
 float opornoe = 1.10; //делить на opornoe/10
 #define save_DOZ 20 //как часто сохранять накопленную дозу например каждые 20мкР
@@ -43,7 +44,7 @@ byte periodical_alarm_variable = 0; // переменная для период�
 unsigned long gr_milis = 0, lcd_milis = 0;
 unsigned long alarm_milis = 0; //для отсчёта длительности сигнала тревоги по превышению порога
 unsigned long spNAK_milis = 0, time_doza = 0, bat_mill = 0;
-uint16_t hv_adc, hv_400, shet_s = 0;
+uint16_t hv_adc, hv_400, shet_n = 0, shet_s = 0;
 uint16_t fon = 0, fon_254 = 0;
 int speed_nakT = 0, speed_nak = 0, result;
 byte MIN, DAY, HOUR, MONTH; //для учёта времени дозы
@@ -82,7 +83,7 @@ else if (F_CPU == 8000000UL)
  } 
   TIMSK1=(1<<TOIE1); //разрешить прерывание
   //-----------------------------------------------------------
- // Serial.begin(115200);
+// Serial.begin(115200);
   ACSR |= 1 << ACD; //отключаем компаратор
   //ADCSRA &= ~(1 << ADEN);  // отключаем АЦП,
   pinMode(3, INPUT_PULLUP); //кнопка
@@ -289,7 +290,9 @@ if (menu == 1)
 					}
 				if (n_menu == 3) 
 					{
-						key_data = 0;  // обнуляем переменную функции кнопок для предотвращения ложных срабатываний далее по коду		  
+						key_data = 0;  // обнуляем переменную функции кнопок для предотвращения ложных срабатываний далее по коду
+						graph_type++;
+						if (graph_type>1) {graph_type = 1;}
 					}
 				if (n_menu == 4) 
 					{
@@ -402,6 +405,8 @@ if (menu == 1)
 				if (n_menu == 3) 
 					{
 						key_data = 0;  // обнуляем переменную функции кнопок для предотвращения ложных срабатываний далее по коду
+						graph_type--;
+						if (graph_type > 1) {graph_type = 0;}
 					}
 				if (n_menu == 4) 
 					{
@@ -645,10 +650,30 @@ if (doz_v >= 1000)
 	}
 myGLCD.drawLine(0, 32, 83, 32);//верхняя
 battery();
-for (uint8_t i = 0; i < 82; i ++)  //печатаем график
+if (graph_type == 0)
 	{
-		uint8_t max_pixel = map(mass_p[i], 0, GRAPH_max, 0, 15);
-		myGLCD.drawLine(i + 1, 47, i + 1, 47 - max_pixel);
+	for (uint8_t i = 0; i < 82; i ++)  //печатаем график
+		{
+			uint8_t max_pixel = map(mass_p[i], 0, GRAPH_max, 0, 15);
+			myGLCD.drawLine(i + 1, 47, i + 1, 47 - max_pixel);
+		}
+	}
+else if (graph_type == 1)
+	{
+	for (int i = 0; i < 82; i ++)  //печатаем график
+	  {
+		if (mass_p[i] > 0) 
+			{
+				if (mass_p[i] <= 15) 
+					{
+						myGLCD.drawLine(i + 1, 47, i + 1, 47 - mass_p[i]);
+					}
+				if (mass_p[i] > 15) 
+					{
+						myGLCD.drawLine(i + 1, 47, i + 1, 47 - 15);
+					}
+			}
+		}
 	}
 myGLCD.update();
 }
@@ -662,7 +687,7 @@ myGLCD.print(utf8rus("ПОРОГ 2"), 5, 6); myGLCD.printNumI(treviga_2, 55, 6);
 myGLCD.print(utf8rus("ПОДСВЕТКА"), 5, 12); 
 if (podsvetka)  { myGLCD.print(utf8rus("ВКЛ."), RIGHT, 12); }
 else  { myGLCD.print(utf8rus("ВЫКЛ."), RIGHT, 12);  }
-myGLCD.print("----------", 5, 18);  myGLCD.print("-----------", RIGHT, 18); //usr
+myGLCD.print(utf8rus("ТИП. ГРАФИКА"), 5, 18);  myGLCD.printNumI(graph_type, 55, 18); myGLCD.print("0-1", RIGHT, 18); //usr
 myGLCD.print(utf8rus("ОБН. ГРАФИКА"), 5, 24); myGLCD.printNumI(scrin_GRAF, 59, 24); myGLCD.print(utf8rus("СЕК."), RIGHT, 24);//
 myGLCD.print(utf8rus("ИНДИКАЦИЯ"), 5, 30); //пункт меню выбора индикации частиц
 switch (ind_ON)
@@ -828,7 +853,8 @@ if (gotovo == 1)
     if (bet_z == 2)  //результат
 		{
 			bet_r = bet_z1 - bet_z0;
-			bet_r = bet_r / (1.5 * beta_time);
+//			bet_r = bet_r / (1.5 * beta_time);
+			bet_r = bet_r / ((60.0/(float)geiger_counter_seconds) * (float)beta_time);
 		}
 	}
 if (key_data == key_pressed_right)  //нажатие >>>
@@ -841,7 +867,7 @@ if (key_data == key_pressed_right)  //нажатие >>>
 //-------------------------------------------------------------------------------------------------------------
 void poisk_f() //режим поиска
 {
-uint16_t shet_gr = 0;
+int16_t shet_gr = 0;
 if (poisk == 1) 
 	{
 		if (timer_seconds != count_and_dose_seconds) 
@@ -895,7 +921,7 @@ if (poisk == 1)
 								fon_vr254 = fon_vr254 + mass_poisk[i];
 								if (i > geiger_counter_seconds_reverse)
 									{
-										fon_vr_poisk = fon_vr_poisk + mass_poisk[254-i];
+										fon_vr_poisk = fon_vr_poisk + mass_poisk[i];
 									}
 							}
 						fon = fon_vr_poisk;
@@ -914,7 +940,9 @@ if (poisk == 1)
 			}
 		if (millis() - gr_milis >= scrin_GRAF * 1000) //счет для графика
 			{
-				gr_milis = millis();
+			gr_milis = millis();
+			if (graph_type == 0)
+				{
 				val_ok = 0;//сброс удержания системного меню  
 				for (uint8_t s = 254; s >= (255 - scrin_GRAF); s--) 
 					{
@@ -926,7 +954,11 @@ if (poisk == 1)
 						mass_p[i] = mass_p[i + 1];
 					}
 				mass_p[82] = byte(shet_gr);
-				if (GRAPH_count > 82) {GRAPH_max = 5; GRAPH_count = 0;}		
+				if (GRAPH_count > 82) 
+					{
+						GRAPH_max = 5; 
+						GRAPH_count = 0;
+					}		
 				for (int i = 0; i < 82; i++) 
 					{
 						if (mass_p[i] > GRAPH_max)
@@ -936,6 +968,24 @@ if (poisk == 1)
 							}
 					}
 				GRAPH_count++;	   
+				}
+			if (graph_type == 1)
+				{
+					val_ok = 0;//сброс удержания системного меню
+					shet_gr = shet - shet_n;
+					if (shet_gr < 0) 
+						{
+							shet_gr = 1;
+						}
+					shet_n = shet;
+					for (int i = 0; i < 83; i++) 
+						{
+							mass_p[i] = mass_p[i + 1];
+						}
+					mass_p[82] = byte(shet_gr);
+						
+				
+				}				
 			}
 	}
 }
@@ -1104,7 +1154,7 @@ void eeprom_wrS ()  //запись настроек в память
   EEPROM.write(0, 222);
   EEPROM.write(1, treviga_1);
   EEPROM.write(2, podsvetka);
-//  EEPROM.write(3, son_OK);
+  EEPROM.write(3, graph_type);
   EEPROM.write(4, scrin_GRAF);
   EEPROM.write(5, ind_ON);
   EEPROM.write(6, puls);
@@ -1136,7 +1186,7 @@ void eeprom_readS ()  //чтение настроек из памяти
 	{
 		treviga_1 = EEPROM.read(1);
 		podsvetka = EEPROM.read(2);
-//		son_OK = EEPROM.read(3);
+		graph_type = EEPROM.read(3);
 		scrin_GRAF = EEPROM.read(4);
 		ind_ON = EEPROM.read(5);
 		puls = EEPROM.read(6);
