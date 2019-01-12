@@ -1,4 +1,4 @@
-/* ArDOs   v1.08a
+/* ArDOs   v1.08
 ***Дозиметр на Ардуино
 ***IDE Arduino 1.8.8
   ветка форума arduino.ru/forum/proekty/delaem-dozimetr
@@ -687,7 +687,7 @@ myGLCD.print(utf8rus("ПОРОГ 2"), 5, 6); myGLCD.printNumI(treviga_2, 55, 6);
 myGLCD.print(utf8rus("ПОДСВЕТКА"), 5, 12); 
 if (podsvetka)  { myGLCD.print(utf8rus("ВКЛ."), RIGHT, 12); }
 else  { myGLCD.print(utf8rus("ВЫКЛ."), RIGHT, 12);  }
-myGLCD.print(utf8rus("ТИП. ГРАФИКА"), 5, 18);  myGLCD.printNumI(graph_type, 55, 18); myGLCD.print("0-1", RIGHT, 18); //usr
+myGLCD.print(utf8rus("ТИП. ГРАФИКА"), 5, 18);  myGLCD.printNumI(graph_type, 59, 18); myGLCD.print("0-1", RIGHT, 18); //
 myGLCD.print(utf8rus("ОБН. ГРАФИКА"), 5, 24); myGLCD.printNumI(scrin_GRAF, 59, 24); myGLCD.print(utf8rus("СЕК."), RIGHT, 24);//
 myGLCD.print(utf8rus("ИНДИКАЦИЯ"), 5, 30); //пункт меню выбора индикации частиц
 switch (ind_ON)
@@ -855,6 +855,7 @@ if (gotovo == 1)
 			bet_r = bet_z1 - bet_z0;
 //			bet_r = bet_r / (1.5 * beta_time);
 			bet_r = bet_r / ((60.0/(float)geiger_counter_seconds) * (float)beta_time);
+			if (bet_r < 0) {bet_r = 0;} // если результат отрицательный - выводим 0. Можно оставить вывод отрицательного результата, закомментировав данную строчку.
 		}
 	}
 if (key_data == key_pressed_right)  //нажатие >>>
@@ -1163,7 +1164,7 @@ void eeprom_wrS ()  //запись настроек в память
   EEPROM.write(17, beta_time);
   myGLCD.clrScr();
   myGLCD.setFont(SmallFontRus);
-  myGLCD.print(utf8rus("Сохранено"), CENTER, 24);
+  myGLCD.print(utf8rus("Сохранено"), CENTER, 20);
   myGLCD.update();
   _delay_ms(1000);
 }
@@ -1448,11 +1449,13 @@ if (timer_seconds > 59){timer_seconds = 0;}
 
 ChangeLog by tekagi:
 
-1.08a		09.01.2019
+1.08		12.01.2019
   -подрихтовано форматирование
   -выброшены неиспользуемые переменные
   -вернул старый график (можно включить вместо нового в пользовательском меню)
   -мелкие багфиксы
+  -выброшен отдельный режим длительного замера (показания выводятся на главный экран)
+  -если в разностном замере результат отрицательный - теперь выводится 0, а не отрицательное значение
 
 1.07.9		01.01.2019
   -переписан график (ранее график отобржал увеличение кол-ва импульсов над предыдущим временным интервалом, сейчас показывает усреднённое значение за выбранный интервал, масштабируя по максимальному значению за весь отображаемый на экране период)
