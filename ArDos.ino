@@ -26,10 +26,10 @@ uint8_t graph_type = 1; //тип графика
 bool alarm_sound = 0; //флаг индикации превышения порога звуком
 float opornoe = 1.10; //делить на opornoe/10
 #define save_DOZ 20 //как часто сохранять накопленную дозу например каждые 20мкР
-#define geiger_counter_seconds 40 // число секунд для замера, соответствующее характеристикам счётчика. Для СБМ-20 равно 40.
 byte beta_time = 5; //время замера бета излучения
 //настройки //////////////конец
 //служебные переменные
+#define geiger_counter_seconds 6 // число секунд для замера, соответствующее характеристикам счётчика. Для СБМ-20 равно 40.
 extern uint8_t SmallFontRus[], MediumNumbers[], TinyFontRus[];
 volatile uint8_t timer_seconds = 0; // для отсчёта секундных интервалов в прерывании
 uint8_t beta_seconds = 0;
@@ -37,7 +37,7 @@ uint8_t count_and_dose_seconds = 0;
 #define maxString 21 // для работы функции преобразования кодировки utf8us
 char target[maxString + 1] = ""; // для работы функции преобразования кодировки utf8us
 extern uint8_t logo_bat[], logo_rag[], logo_tr[], beta_prev_1[], beta_prev_2[];
-volatile int shet = 0;
+volatile uint16_t shet = 0;
 int8_t ind_ON = 1;  //0 - индикация выключена, 1 - включён бузер, 2 - светодиод, 3 - и бузер, и светодиод
 uint8_t first_alarm_type = 1;  //1-3, 1 - только бузер, 2 - только вибро, 3 - и бузер, и вибро
 byte periodical_alarm_variable = 0; // переменная для периодически повторяющейся тревожной сигнализации
@@ -45,13 +45,14 @@ unsigned long gr_milis = 0, lcd_milis = 0;
 unsigned long alarm_milis = 0; //для отсчёта длительности сигнала тревоги по превышению порога
 unsigned long spNAK_milis = 0, time_doza = 0, bat_mill = 0;
 uint16_t hv_adc, hv_400, shet_n = 0, shet_s = 0;
-uint16_t fon = 0, fon_254 = 0;
+uint16_t fon = 0, fon_60 = 0;
 int speed_nakT = 0, speed_nak = 0, result;
 byte MIN, DAY, HOUR, MONTH; //для учёта времени дозы
-uint16_t doza_vr = 0, fon_vr254 = 0, fon_vr_poisk = 0;
+uint16_t doza_vr = 0, fon_vr60 = 0;
+uint32_t fon_vr_poisk = 0;
 byte mass_p[84]; // массив для графика
 byte m = 0, n_menu = 0, sys_menu = 0;
-byte  mass_poisk[255]; // основной рабочий массив
+uint16_t  mass_poisk[61]; // основной рабочий массив
 byte val_kl = 0, val_ok = 0, menu = 0, zam_poisk_counter = 0;
 byte sek = 0, minute = 0, bet_z = 0, gotovo = 0;
 int  bet_z0 = 0, bet_z1 = 0, bet_r = 0;
@@ -150,7 +151,7 @@ if (menu == 3)
 		key_data = 0;  // обнуляем переменную функции кнопок для предотвращения ложных срабатываний далее по коду
 		menu = 0;
 		shet = 0; fon = 0; zam_poisk_counter = 0;
-		for (int i = 0; i < 18; i++) { mass_poisk[i] = 0; }//чистим
+		for (uint8_t i = 0; i < 18; i++) { mass_poisk[i] = 0; }//чистим
 	}
   } 
 if (menu == 4) 
@@ -560,35 +561,35 @@ if (tr == 1)  //опасно
 		myGLCD.drawBitmap(0, 0, logo_tr, 24, 8);
 	}
 myGLCD.setFont(TinyFontRus);
-if (fon_254 > 0) 
+if (fon_60 > 0) 
 	{
-		if (fon_254 >= 1000) 
+		if (fon_60 >= 1000) 
 			{
 				myGLCD.print("\xBC\xBE\xBF", 43, 0);
 			}
-		if (fon_254 < 1000) 
+		if (fon_60 < 1000) 
 			{
 				myGLCD.print("\xBC\xBD\xBE\xBF", 43, 0);
 			}
 	}
-if ((zam_poisk_counter >= 254) || blink_data)
+if ((zam_poisk_counter >= 60) || blink_data)
 	{
 	myGLCD.setFont(TinyFontRus);
-	if (fon_254 > 0) 
+	if (fon_60 > 0) 
 		{
-			if (fon_254 >= 1000) 
+			if (fon_60 >= 1000) 
 				{
-					myGLCD.printNumF((float(fon_254)/1000.0), 1, 26, 0);
+					myGLCD.printNumF((float(fon_60)/1000.0), 1, 26, 0);
 				}
-			if (fon_254 < 1000) 
+			if (fon_60 < 1000) 
 				{
-					if (fon_254 < 100)
+					if (fon_60 < 100)
 						{
-							myGLCD.printNumI(fon_254, 32, 0);
+							myGLCD.printNumI(fon_60, 32, 0);
 						}
 					else
 						{
-							myGLCD.printNumI(fon_254, 26, 0);
+							myGLCD.printNumI(fon_60, 26, 0);
 						}
 				}
 		}
@@ -874,59 +875,59 @@ if (poisk == 1)
 		if (timer_seconds != count_and_dose_seconds) 
 			{
 				count_and_dose_seconds = timer_seconds;
-					for (int i = 0; i < 254; i++)  //сдвигаем
+					for (uint8_t i = 0; i < 60; i++)  //сдвигаем
 					{
 						mass_poisk[i] = mass_poisk[i + 1];
 					}
-				mass_poisk[254] = shet;
-				if ((zam_poisk_counter < 254) && (zam_poisk_counter < geiger_counter_seconds))  //первый набор массива
+				mass_poisk[60] = shet;
+				if ((zam_poisk_counter < 60) && (zam_poisk_counter < geiger_counter_seconds))  //первый набор массива
 					{
 						fon_vr_poisk = fon_vr_poisk + shet;  						
 						zam_poisk_counter++;
 						fon = fon_vr_poisk*((float(geiger_counter_seconds))/(float(zam_poisk_counter))); 
-//						fon_254 = fon;
-						fon_254 = 0;
+//						fon_60 = fon;
+						fon_60 = 0;
 					}
-				else if ((zam_poisk_counter < 254) && (zam_poisk_counter == geiger_counter_seconds))  //
+				else if ((zam_poisk_counter < 60) && (zam_poisk_counter == geiger_counter_seconds))  //
 					{		
 						zam_poisk_counter++;
 						fon_vr_poisk = fon_vr_poisk + shet; 
 						fon = fon_vr_poisk*((float(geiger_counter_seconds))/(float(zam_poisk_counter)));
-						fon_254 = fon;		
-						fon_vr254 = fon_vr_poisk;
+						fon_60 = fon;		
+						fon_vr60 = fon_vr_poisk;
 					}
-				else if ((zam_poisk_counter < 254) && (zam_poisk_counter > geiger_counter_seconds))  //
+				else if ((zam_poisk_counter < 60) && (zam_poisk_counter > geiger_counter_seconds))  //
 					{
 						fon_vr_poisk = 0;
 						for (int i = zam_poisk_counter; i > 0; i--) 
 							{
-								fon_vr254 = fon_vr254 + mass_poisk[254-i];
+								fon_vr60 = fon_vr60 + mass_poisk[60-i];
 							}
-						for (int j = 254 - geiger_counter_seconds; j < 255; j++) 
+						for (int j = 60 - geiger_counter_seconds; j < 61; j++) 
 							{	
 								fon_vr_poisk = fon_vr_poisk + mass_poisk[j];
 							}
 						fon = fon_vr_poisk;
-//						fon_254 = (float(fon_vr254))*((float(geiger_counter_seconds))/(float(zam_poisk_counter)));
-						fon_254 = (float)fon_vr254*((float)geiger_counter_seconds/(float)zam_poisk_counter); 
-						fon_vr254 = 0;
+//						fon_60 = (float(fon_vr60))*((float(geiger_counter_seconds))/(float(zam_poisk_counter)));
+						fon_60 = (float)fon_vr60*((float)geiger_counter_seconds/(float)zam_poisk_counter); 
+						fon_vr60 = 0;
 						zam_poisk_counter++;
 					}	
-				else if (zam_poisk_counter >= 254)  //набор массива
+				else if (zam_poisk_counter >= 60)  //набор массива
 					{
 						fon_vr_poisk = 0;
-						fon_vr254 = 0;
-						byte geiger_counter_seconds_reverse = 254 - geiger_counter_seconds;
-						for (int i = 254; i > 0; i--) 
+						fon_vr60 = 0;
+						byte geiger_counter_seconds_reverse = 60 - geiger_counter_seconds;
+						for (int i = 60; i > 0; i--) 
 							{
-								fon_vr254 = fon_vr254 + mass_poisk[i];
+								fon_vr60 = fon_vr60 + mass_poisk[i];
 								if (i > geiger_counter_seconds_reverse)
 									{
 										fon_vr_poisk = fon_vr_poisk + mass_poisk[i];
 									}
 							}
 						fon = fon_vr_poisk;
-						fon_254 = (float(fon_vr254))*((float(geiger_counter_seconds))/254.0);
+						fon_60 = (float(fon_vr60))*((float(geiger_counter_seconds))/60.0);
 					}
 				shet = 0;
 				doz_v = doz_v + fon / 100.0 / 40.0;
@@ -945,7 +946,7 @@ if (poisk == 1)
 			if (graph_type == 0)
 				{
 				val_ok = 0;//сброс удержания системного меню  
-				for (uint8_t s = 254; s >= (255 - scrin_GRAF); s--) 
+				for (uint8_t s = 60; s >= (61 - scrin_GRAF); s--) 
 					{
 						shet_gr = shet_gr + mass_poisk[s];
 					}
@@ -996,14 +997,14 @@ void clear_poisk_variables ()
 {
 shet = 0;
 fon = 0;
-fon_254 = 0;
+fon_60 = 0;
 zam_poisk_counter = 0;
 GRAPH_max = 5;
 GRAPH_count = 0;
-fon_vr254 = 0;
+fon_vr60 = 0;
 fon_vr_poisk = 0;
 for (uint8_t i = 0; i < 83; i++) { mass_p[i] = 0; } // чистим массив графика
-for (uint8_t i = 0; i < 254; i++) { mass_poisk[i] = 0; } // чистим массив поиска	
+for (uint8_t i = 0; i < 60; i++) { mass_poisk[i] = 0; } // чистим массив поиска	
 }
 
 void signa ()  //индикация каждой частички звуком светом
