@@ -36,8 +36,9 @@ uint8_t beta_seconds = 0;
 uint8_t count_and_dose_seconds = 0;
 #define maxString 21 // для работы функции преобразования кодировки utf8us
 char target[maxString + 1] = ""; // для работы функции преобразования кодировки utf8us
-extern uint8_t logo_bat[], logo_rag[], logo_tr[], beta_prev_1[], beta_prev_2[];
+extern uint8_t logo_bat[], logo_rag[], logo_tr[], beta_prev_1[], beta_prev_2[], em_logo[];
 volatile int shet = 0;
+volatile bool overflow_alarm = 0;
 int8_t ind_ON = 1;  //0 - индикация выключена, 1 - включён бузер, 2 - светодиод, 3 - и бузер, и светодиод
 uint8_t first_alarm_type = 1;  //1-3, 1 - только бузер, 2 - только вибро, 3 - и бузер, и вибро
 byte periodical_alarm_variable = 0; // переменная для периодически повторяющейся тревожной сигнализации
@@ -593,7 +594,12 @@ if ((zam_poisk_counter >= 254) || blink_data)
 				}
 		}
 	}
-if ((zam_poisk_counter >= geiger_counter_seconds) || blink_data)
+if (overflow_alarm && !blink_data)
+	{
+	myGLCD.drawBitmap(16, 8, em_logo, 16, 16);
+	overflow_alarm = 0;
+	}
+else if ((zam_poisk_counter >= geiger_counter_seconds) || blink_data)
 	{
 		myGLCD.setFont(MediumNumbers);
 		if (fon > 0) 
@@ -1071,6 +1077,7 @@ else // если активен сигнал тревоги, то только �
 void Schet()  //прерывание от счетчика на пин 2
 {
 shet++;
+if (shet>250) {overflow_alarm = 1;} // детект приближения к переполнению переменной
 }
 //-------------------------------------------------------------------------------------------------
 void generator() //накачка по обратной связи с АЦП
@@ -1144,7 +1151,7 @@ myGLCD.InitLCD();
 myGLCD.setContrast(contrast);
 myGLCD.clrScr();
 myGLCD.drawBitmap(0, 0, logo_rag, 84, 48);
-myGLCD.setFont(SmallFontRus);
+//myGLCD.setFont(SmallFontRus);
 //  myGLCD.print(utf8rus("Ардуино+"), CENTER, 32);
 //  myGLCD.print(utf8rus("Дозиметр v1.07"), CENTER, 40);
 myGLCD.update();
@@ -1449,6 +1456,9 @@ if (timer_seconds > 59){timer_seconds = 0;}
 /*
 
 ChangeLog by tekagi:
+
+1.08.2		25.03.2019
+  -добавлена индикация переполнения счётной переменной
 
 1.08.1		24.03.2019
   -пара мелких багфиксов (обнуление переменной в строке 901 и коррекция обратного преобразования среднего фона в дозу с учётом 3600 секунд в 933)
